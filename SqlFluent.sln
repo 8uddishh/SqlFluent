@@ -1,0 +1,23 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlFluent", "SqlFluent\SqlFluent.csproj", "{125B0258-58F4-4FB1-8C8A-E9E4F6F50C10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlFluent.App", "SqlFluent.App\SqlFluent.App.csproj", "{97BAEFBA-C99D-4F7E-869B-B68AF784DB52}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{125B0258-58F4-4FB1-8C8A-E9E4F6F50C10}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{125B0258-58F4-4FB1-8C8A-E9E4F6F50C10}.Debug|x86.Build.0 = Debug|Any CPU
+		{125B0258-58F4-4FB1-8C8A-E9E4F6F50C10}.Release|x86.ActiveCfg = Release|Any CPU
+		{125B0258-58F4-4FB1-8C8A-E9E4F6F50C10}.Release|x86.Build.0 = Release|Any CPU
+		{97BAEFBA-C99D-4F7E-869B-B68AF784DB52}.Debug|x86.ActiveCfg = Debug|x86
+		{97BAEFBA-C99D-4F7E-869B-B68AF784DB52}.Debug|x86.Build.0 = Debug|x86
+		{97BAEFBA-C99D-4F7E-869B-B68AF784DB52}.Release|x86.ActiveCfg = Release|x86
+		{97BAEFBA-C99D-4F7E-869B-B68AF784DB52}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+EndGlobal
