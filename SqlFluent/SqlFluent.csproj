@@ -35,6 +35,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlDataReaderXtensions.cs" />
     <Compile Include="IEnumerableXtensions.cs" />
+    <Compile Include="SqlFluent_Async.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

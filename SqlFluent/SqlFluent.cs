@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SqlFluent
 {
@@ -18,7 +19,15 @@ namespace SqlFluent
         IEnumerable<T> ExecuteReader<T>(Func<SqlDataReader, T> readerAction, Action<SqlCommand> postReadAction = null);
         IEnumerable<T> ExecuteReaderWithYield<T>(Func<SqlDataReader, T> readerAction);
         T ExecuteSingle<T>(Func<SqlDataReader, T> readerAction, Action<SqlCommand> postReadAction = null);
-        object ExecuteScalar();
+        object ExecuteScalar(Action<SqlCommand> postReadAction = null);
+
+
+        Task ExecuteNonQueryAsync(Action<SqlCommand> postAction = null);
+        Task<IEnumerable<T>> ExecuteReaderAsync<T>(Func<SqlDataReader, Task<T>> readerActionAsync,
+                                                   Action<SqlCommand> postAction = null);
+        Task<T> ExecuteSingleAsync<T>(Func<SqlDataReader, Task<T>> readerActionAsync,
+                                            Action<SqlCommand> postAction = null);
+        Task<object> ExecuteScalarAsync(Action<SqlCommand> postAction = null);
 
     }
 
@@ -27,7 +36,7 @@ namespace SqlFluent
         ICommand ConnectionString(string connectionString);
     }
 
-    public class SqlFluent : IConnectionString, ICommand
+    public partial class SqlFluent : IConnectionString, ICommand
     {
         string _connectionString;
         List<SqlParameter> _commandParameters;
@@ -142,10 +151,11 @@ namespace SqlFluent
             return result;
         }
 
-        public object ExecuteScalar() {
+        public object ExecuteScalar(Action<SqlCommand> postReadAction = null) {
             object result = null;
             Execute(cmd => {
                 result = cmd.ExecuteScalar();
+                postReadAction?.Invoke(cmd);
             });
             return result;
         }
