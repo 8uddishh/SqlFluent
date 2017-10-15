@@ -131,7 +131,71 @@ var customer = new SqlFluent(connectionstring)
                     }
                 });
 ```
+## Async Implementations ExecuteReaderAsync
+``` c#
+var products = await new SqlFluent(builder.ConnectionString)
+                .Query("select top 25 * from SalesLT.Product where productid > @productId and Color = @color")
+                .Parameter("@productId", SqlDbType.Int, value: 800)
+                .Parameter("@color", SqlDbType.NVarChar, value: "black", size: 50)
+                .ExecuteReaderAsync(async reader => new Product
+                {
+                    ProductId = await reader.GetSafeValueAsync<int>("ProductId"),
+                    ProductName = await reader.GetSafeValueAsync<string>("Name"),
+                    ProductNumber = await reader.GetSafeValueAsync<string>("ProductNumber"),
+                    Color = await reader.GetSafeValueAsync<string>("Color"),
+                    StandardCost = await reader.GetSafeValueAsync<decimal>("StandardCost"),
+                    ListPrice = await reader.GetSafeValueAsync<decimal>("ListPrice"),
+                    Size = await reader.GetSafeValueAsync<string>("Size"),
+                    Weight = await reader.GetSafeValueAsync<decimal?>("Weight"),
+                    SellStartDate = await reader.GetSafeValueAsync<DateTime>("SellStartDate"),
+                    SellEndDate = await reader.GetSafeValueAsync<DateTime?>("SellEndDate")
+                });
+                
+```
+# Async
+Async implementations are available in the SqlFluent.Web2 application in the HomeController
+
+## Async Implementations ExecuteSingleAsync
+``` c#
+var customer = await new SqlFluent(builder.ConnectionString)
+                .Query("Select * from SalesLT.Customer where LastName = @lastname and customerid < @customerId")
+                .Parameter("@customerId", SqlDbType.Int, value: 10)
+                .Parameter("@lastname", SqlDbType.NVarChar, value: "Harris", size: 50)
+                .ExecuteSingle(async reader => new Customer
+                {
+                    CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
+                    Title = await reader.GetSafeValueAsync<string>("Title"),
+                    FirstName = await reader.GetSafeValueAsync<string>("FirstName"),
+                    MiddleName = await reader.GetSafeValueAsync<string>("MiddleName"),
+                    LastName = await reader.GetSafeValueAsync<string>("LastName"),
+                    Suffix = await reader.GetSafeValueAsync<string>("Suffix"),
+                    CompanyName = await reader.GetSafeValueAsync<string>("CompanyName"),
+                    EmailAddress = await reader.GetSafeValueAsync<string>("EmailAddress")
+                });
+```
+
+## Async Implementations ExecuteNonQueryAsync
+``` c#
+var newGuid = Guid.NewGuid();
+            var newCategoryId = 0;
+
+            var builder =
+                new SqlConnectionStringBuilder(ConfigurationManager.AppSettings["connectionstring"]);
+            builder.AsynchronousProcessing = true;
+            await new SqlFluent(builder.ConnectionString)
+                .StoredProcedure("SalesLT.AddCategory")
+                .Parameter("@name", SqlDbType.NVarChar, value: $"Test-{newGuid}", size: 200)
+                .Parameter("@rowguid", SqlDbType.UniqueIdentifier, value: newGuid)
+                .Parameter("@categoryId", SqlDbType.Int, direction: ParameterDirection.Output)
+                .Parameter("@retVal", SqlDbType.Int, direction: ParameterDirection.ReturnValue)
+                .ExecuteNonQueryAsync(cmd =>
+                {
+                    if ((int)cmd.Parameters["@retVal"].Value == 1)
+                    {
+                        newCategoryId = (int)cmd.Parameters["@categoryId"].Value;
+                    }
+                });
+```
 
 ## What the future holds
-* Async Await implementations will be added 
 * Multiple result sets handling will be added
