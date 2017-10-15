@@ -164,7 +164,7 @@ var customer = await new SqlFluent(builder.ConnectionString)
                 .Query("Select * from SalesLT.Customer where LastName = @lastname and customerid < @customerId")
                 .Parameter("@customerId", SqlDbType.Int, value: 10)
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harris", size: 50)
-                .ExecuteSingle(async reader => new Customer
+                .ExecuteSingleAsync(async reader => new Customer
                 {
                     CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
                     Title = await reader.GetSafeValueAsync<string>("Title"),
