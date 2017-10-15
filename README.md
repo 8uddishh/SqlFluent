@@ -131,6 +131,11 @@ var customer = new SqlFluent(connectionstring)
                     }
                 });
 ```
+
+# Async
+Async implementations are available in the SqlFluent.Web2 application in the HomeController
+
+
 ## Async Implementations ExecuteReaderAsync
 ``` c#
 var products = await new SqlFluent(builder.ConnectionString)
@@ -152,8 +157,6 @@ var products = await new SqlFluent(builder.ConnectionString)
                 });
                 
 ```
-# Async
-Async implementations are available in the SqlFluent.Web2 application in the HomeController
 
 ## Async Implementations ExecuteSingleAsync
 ``` c#
