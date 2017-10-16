@@ -20,6 +20,7 @@ namespace SqlFluent
 
                     await actionAsync(command);
                     postAction?.Invoke(command);
+                    connection.Close();
                 }
             }
         }

@@ -97,6 +97,7 @@ namespace SqlFluent
                         command.Parameters.AddRange(_commandParameters.ToArray());
 
                     action(command);
+                    connection.Close(); 
                 }
             }
         }
@@ -132,6 +133,7 @@ namespace SqlFluent
                         while (reader.Read())
                             yield return readerAction(reader);
                     }
+                    connection.Close(); 
                 }
             }
         }
