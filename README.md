@@ -246,6 +246,7 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
                 .Parameter("@productId", SqlDbType.Int, value: 800)
                 .Parameter("@color", SqlDbType.NVarChar, value: "black", size: 50)
                 .ParametersEnd()
+                .Async()
                 .ExecuteReaderAsync(async reader => new Product
                 {
                     ProductId = await reader.GetSafeValueAsync<int>("ProductId"),
@@ -270,6 +271,7 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
                 .Parameter("@customerId", SqlDbType.Int, value: 10)
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harris", size: 50)
                 .ParametersEnd()
+                .Async()
                 .ExecuteSingleAsync(async reader => new Customer
                 {
                     CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
@@ -299,6 +301,7 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
                 .Parameter("@categoryId", SqlDbType.Int, direction: ParameterDirection.Output)
                 .Parameter("@retVal", SqlDbType.Int, direction: ParameterDirection.ReturnValue)
                 .ParametersEnd()
+                .Async()
                 .ExecuteNonQueryAsync(cmd =>
                 {
                     if ((int)cmd.Parameters["@retVal"].Value == 1)
