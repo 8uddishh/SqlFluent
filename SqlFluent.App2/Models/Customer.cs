@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+
 namespace SqlFluent.App.Models
 {
+
+
     public class Customer
     {
         public Customer()
@@ -15,5 +19,8 @@ namespace SqlFluent.App.Models
         public string Suffix { get; set; }
         public string CompanyName { get; set; }
         public string EmailAddress { get; set; }
+
+        public List<SalesOrder> Orders { get; set; }
+        public List<Address> Addresses { get; set; }
     }
 }

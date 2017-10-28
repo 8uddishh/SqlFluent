@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using SqlFluent.App.Models;
@@ -10,13 +11,15 @@ namespace SqlFluent.App
     {
         public static void Main(string[] args)
         {
+            var connectionstring = ConfigurationManager.AppSettings["connectionstring"];
             Console.WriteLine("ExecuteReader (Query)");
             Console.WriteLine("--------------------");
-            var connectionstring = ConfigurationManager.AppSettings["connectionstring"];
             new SQF(connectionstring)
                             .Query("select top 25 * from SalesLT.Product where productid > @productId and Color = @color")
+                            .ParametersStart()
                             .Parameter("@productId", SqlDbType.Int, value: 800)
                             .Parameter("@color", SqlDbType.NVarChar, value: "black", size: 50)
+                            .ParametersEnd()
                             .ExecuteReader(reader => new Product
                             {
                                 ProductId = reader.GetSafeValue<int>("ProductId"),
@@ -39,8 +42,10 @@ namespace SqlFluent.App
             new SQF()
                 .ConnectionString(connectionstring)
                 .StoredProcedure("SalesLT.Top25Products")
+                .ParametersStart()
                 .Parameter("@productId", SqlDbType.Int, value: 700)
                 .Parameter("@color", SqlDbType.NVarChar, value: "red", size: 50)
+                .ParametersEnd()
                 .ExecuteReader(reader => new Product
                 {
                     ProductId = reader.GetSafeValue<int>("ProductId"),
@@ -62,8 +67,10 @@ namespace SqlFluent.App
             Console.WriteLine("--------------------");
             new SQF(connectionstring)
                 .StoredProcedure("SalesLT.Top25Products")
+                .ParametersStart()
                 .Parameter("@productId", SqlDbType.Int, value: 700)
                 .Parameter("@color", SqlDbType.NVarChar, value: "yellow", size: 50)
+                .ParametersEnd()
                 .ExecuteReaderWithYield(reader => new Product
                 {
                     ProductId = reader.GetSafeValue<int>("ProductId"),
@@ -85,8 +92,10 @@ namespace SqlFluent.App
             Console.WriteLine("--------------------");
             var customer = new SQF(connectionstring)
                 .Query("Select * from SalesLT.Customer where LastName = @lastname and customerid < @customerId")
+                .ParametersStart()
                 .Parameter("@customerId", SqlDbType.Int, value: 10)
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harris", size: 50)
+                .ParametersEnd()
                 .ExecuteSingle(reader => new Customer
                 {
                     CustomerId = reader.GetSafeValue<int>("CustomerId"),
@@ -106,23 +115,118 @@ namespace SqlFluent.App
             var newGuid = Guid.NewGuid();
             var newCategoryId = 0;
             new SQF(connectionstring)
-                .StoredProcedure("SalesLT.AddCategory")
-                .Parameter("@name", SqlDbType.NVarChar, value: $"Test-{newGuid}", size: 200)
-                .Parameter("@rowguid", SqlDbType.UniqueIdentifier, value: newGuid)
-                .Parameter("@categoryId", SqlDbType.Int, direction: ParameterDirection.Output)
-                .Parameter("@retVal", SqlDbType.Int, direction: ParameterDirection.ReturnValue)
-                .ExecuteNonQuery(cmd =>
+            .StoredProcedure("SalesLT.AddCategory")
+            .ParametersStart()
+            .Parameter("@name", SqlDbType.NVarChar, value: $"Test-{newGuid}", size: 200)
+            .Parameter("@rowguid", SqlDbType.UniqueIdentifier, value: newGuid)
+            .Parameter("@categoryId", SqlDbType.Int, direction: ParameterDirection.Output)
+            .Parameter("@retVal", SqlDbType.Int, direction: ParameterDirection.ReturnValue)
+            .ParametersEnd()
+            .ExecuteNonQuery(cmd =>
+            {
+                if ((int)cmd.Parameters["@retVal"].Value == 1)
                 {
-                    if ((int)cmd.Parameters["@retVal"].Value == 1)
+                    newCategoryId = (int)cmd.Parameters["@categoryId"].Value;
+                    Console.WriteLine($"New Category Added -> Category # {newCategoryId}");
+                }
+                else
+                {
+                    Console.WriteLine("Error occurred");
+                }
+            });
+
+            Console.WriteLine("ExecuteSingle Cascade (StoredProcedure)");
+            Console.WriteLine("--------------------");
+            var customer2 = new SQF(connectionstring)
+            .StoredProcedure("SalesLT.GetCustomerCompleteInfo")
+            .ParametersStart()
+            .Parameter("@customerId", SqlDbType.Int, value: 29545)
+            .ParametersEnd()
+            .ReadersStart()
+            .Reader(reader => new Customer { 
+                CustomerId = reader.GetSafeValue<int>("CustomerId"),
+                Title = reader.GetSafeValue<string>("Title"),
+                FirstName = reader.GetSafeValue<string>("FirstName"),
+                MiddleName = reader.GetSafeValue<string>("MiddleName"),
+                LastName = reader.GetSafeValue<string>("LastName"),
+                Suffix = reader.GetSafeValue<string>("Suffix"),
+                CompanyName = reader.GetSafeValue<string>("CompanyName"),
+                EmailAddress = reader.GetSafeValue<string>("EmailAddress"),
+                Addresses = new List<Address>(),
+                Orders = new List<SalesOrder>()
+            })
+            .Reader<Customer>((reader, cust) => { 
+                cust.Addresses.Add(new Address {
+                    AddressId = reader.GetSafeValue<int>("AddressId"),
+                    AddressType = reader.GetSafeValue<string>("AddressType"),
+                    AddressGuid = reader.GetSafeValue<Guid>("RowGuid"),
+                    AddressLine1 = reader.GetSafeValue<string>("AddressLine1"),
+                    AddressLine2 = reader.GetSafeValue<string>("AddressLine2"),
+                    City = reader.GetSafeValue<string>("City"),
+                    CountryRegion = reader.GetSafeValue<string>("CountryRegion"),
+                    StateProvince = reader.GetSafeValue<string>("StateProvince"),
+                    PostalCode = reader.GetSafeValue<string>("PostalCode")
+                }); 
+            })
+            .Reader<Customer>((reader, cust) => {
+                cust.Orders.Add(new SalesOrder {
+                    SalesOrderId = reader.GetSafeValue<int>("SalesOrderId"),
+                    OrderDate = reader.GetSafeValue<DateTime>("OrderDate"),
+                    DueDate = reader.GetSafeValue<DateTime>("DueDate"),
+                    ShipDate = reader.GetSafeValue<DateTime>("ShipDate"),
+                    RevisionNumber = reader.GetSafeValue<byte>("RevisionNumber"),
+                    SalesOrderNumber = reader.GetSafeValue<string>("SalesOrderNumber") 
+                }); 
+            })
+            .ReadersEnd()
+            .ExecuteSingleWithCascade<Customer>();
+
+            Console.WriteLine("ExecuteReader Cascade (StoredProcedure)");
+            Console.WriteLine("--------------------");
+            var customers = new SQF(connectionstring)
+                .StoredProcedure("SalesLT.GetCustomerCompleteInfoForName")
+                .ParametersStart()
+                .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
+                .ParametersEnd()
+                .ReadersStart()
+                .Reader(reader => new Customer {
+                    CustomerId = reader.GetSafeValue<int>("CustomerId"),
+                    Title = reader.GetSafeValue<string>("Title"),
+                    FirstName = reader.GetSafeValue<string>("FirstName"),
+                    MiddleName = reader.GetSafeValue<string>("MiddleName"),
+                    LastName = reader.GetSafeValue<string>("LastName"),
+                    Suffix = reader.GetSafeValue<string>("Suffix"),
+                    CompanyName = reader.GetSafeValue<string>("CompanyName"),
+                    EmailAddress = reader.GetSafeValue<string>("EmailAddress"),
+                    Addresses = new List<Address>(),
+                    Orders = new List<SalesOrder>()
+                }).Reader<Customer>((reader, cust) => {
+                    cust.Addresses.Add(new Address
                     {
-                        newCategoryId = (int)cmd.Parameters["@categoryId"].Value;
-                        Console.WriteLine($"New Category Added -> Category # {newCategoryId}");
-                    }
-                    else
+                        AddressId = reader.GetSafeValue<int>("AddressId"),
+                        AddressType = reader.GetSafeValue<string>("AddressType"),
+                        AddressGuid = reader.GetSafeValue<Guid>("RowGuid"),
+                        AddressLine1 = reader.GetSafeValue<string>("AddressLine1"),
+                        AddressLine2 = reader.GetSafeValue<string>("AddressLine2"),
+                        City = reader.GetSafeValue<string>("City"),
+                        CountryRegion = reader.GetSafeValue<string>("CountryRegion"),
+                        StateProvince = reader.GetSafeValue<string>("StateProvince"),
+                        PostalCode = reader.GetSafeValue<string>("PostalCode")
+                    });
+                }).Reader<Customer>((reader, cust) => {
+                    cust.Orders.Add(new SalesOrder
                     {
-                        Console.WriteLine("Error occurred");
-                    }
-                });
+                        SalesOrderId = reader.GetSafeValue<int>("SalesOrderId"),
+                        OrderDate = reader.GetSafeValue<DateTime>("OrderDate"),
+                        DueDate = reader.GetSafeValue<DateTime>("DueDate"),
+                        ShipDate = reader.GetSafeValue<DateTime>("ShipDate"),
+                        RevisionNumber = reader.GetSafeValue<byte>("RevisionNumber"),
+                        SalesOrderNumber = reader.GetSafeValue<string>("SalesOrderNumber")
+                    });
+                }).ReadersEnd()
+                .Selector<Customer>(reader => cust => cust.CustomerId == reader.GetSafeValue<int>("CustomerId"))
+                .ExecuteReaderWithCascade<Customer>();
+
         }
     }
 }

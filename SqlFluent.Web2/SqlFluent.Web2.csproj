@@ -90,6 +90,8 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Models\Customer.cs" />
     <Compile Include="Models\Product.cs" />
+    <Compile Include="Models\Address.cs" />
+    <Compile Include="Models\SalesOrder.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Web.config" />
