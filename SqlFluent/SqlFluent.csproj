@@ -36,6 +36,10 @@
     <Compile Include="SqlDataReaderXtensions.cs" />
     <Compile Include="IEnumerableXtensions.cs" />
     <Compile Include="SqlFluent_Async.cs" />
+    <Compile Include="SqlFluent_Multi.cs" />
+    <Compile Include="SqlFluent_Cascade.cs" />
+    <Compile Include="SqlFluent_Cascade_Async.cs" />
+    <Compile Include="SqlFluent_Multi_Async.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
