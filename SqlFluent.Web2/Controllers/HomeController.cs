@@ -142,6 +142,7 @@ namespace SqlFluent.Web2.Controllers
             .Parameter("@customerId", SqlDbType.Int, value: 29545)
             .ParametersEnd()
             .Async() 
+            .Cascade()
             .ReadersStartAsync()
             .ReaderAsync(async reader => new Customer
             {
@@ -177,10 +178,11 @@ namespace SqlFluent.Web2.Controllers
                     SalesOrderNumber = await reader.GetSafeValueAsync<string>("SalesOrderNumber")
                 });
             }).ReadersEndAsync()
-            .ExecuteSingleWithCascadeAsync<Customer>();
+            .ExecuteSingleAsync<Customer>();
 
             return Json(customer2, JsonRequestBehavior.AllowGet);
         }
+
         public async Task<JsonResult> StoredProcedureCascadeReaderAsync() {
             var builder = new SqlConnectionStringBuilder(ConfigurationManager.AppSettings["connectionstring"])
             {
@@ -192,6 +194,7 @@ namespace SqlFluent.Web2.Controllers
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
                 .ParametersEnd()
                 .Async()
+                .Cascade()
                 .ReadersStartAsync()
                 .ReaderAsync(async reader => new Customer {
                     CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
@@ -229,9 +232,51 @@ namespace SqlFluent.Web2.Controllers
                     });
                 }).ReadersEndAsync()
                 .SelectorAsync<Customer>(reader => cust => cust.CustomerId == reader.GetSafeValue<int>("CustomerId"))
-                .ExecuteReaderWithCascadeAsync<Customer>();
+                .ExecuteReaderAsync<Customer>();
 
             return Json(customers, JsonRequestBehavior.AllowGet);
+        }
+
+        public async Task<JsonResult> QueryMultiReaderAsync() {
+            var builder = new SqlConnectionStringBuilder(ConfigurationManager.AppSettings["connectionstring"])
+            {
+                AsynchronousProcessing = true
+            };
+            var resultSet = await new SqlFluent(builder.ConnectionString)
+                .Query("select * from SalesLT.Product where Color=@color; select * from SalesLT.Customer where lastname=@lastname")
+                .ParametersStart()
+                .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
+                .Parameter("@color", SqlDbType.NVarChar, value: "yellow", size: 50)
+                .ParametersEnd()
+                .Async()
+                .Multi()
+                .ReadersStartAsync()
+                .ReaderAsync("Colors", async reader => new Product {
+                    ProductId = await reader.GetSafeValueAsync<int>("ProductId"),
+                    ProductName = await reader.GetSafeValueAsync<string>("Name"),
+                    ProductNumber = await reader.GetSafeValueAsync<string>("ProductNumber"),
+                    Color = await reader.GetSafeValueAsync<string>("Color"),
+                    StandardCost = await reader.GetSafeValueAsync<decimal>("StandardCost"),
+                    ListPrice = await reader.GetSafeValueAsync<decimal>("ListPrice"),
+                    Size = await reader.GetSafeValueAsync<string>("Size"),
+                    Weight = await reader.GetSafeValueAsync<decimal?>("Weight"),
+                    SellStartDate = await reader.GetSafeValueAsync<DateTime>("SellStartDate"),
+                    SellEndDate = await reader.GetSafeValueAsync<DateTime?>("SellEndDate")
+                }).ReaderAsync("Customers", async reader => new Customer {
+                    CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
+                    Title = await reader.GetSafeValueAsync<string>("Title"),
+                    FirstName = await reader.GetSafeValueAsync<string>("FirstName"),
+                    MiddleName = await reader.GetSafeValueAsync<string>("MiddleName"),
+                    LastName = await reader.GetSafeValueAsync<string>("LastName"),
+                    Suffix = await reader.GetSafeValueAsync<string>("Suffix"),
+                    CompanyName = await reader.GetSafeValueAsync<string>("CompanyName"),
+                    EmailAddress = await reader.GetSafeValueAsync<string>("EmailAddress")
+                }).ReadersEndAsync()
+                .ExecuteReaderAsync();
+
+            var products = resultSet.Get<Product>("Colors");
+            var customers = resultSet.Get<Customer>("Customers");
+            return Json(new { products, customers }, JsonRequestBehavior.AllowGet);
         }
     }
 }

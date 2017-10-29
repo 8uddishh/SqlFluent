@@ -6,12 +6,39 @@ using System.Threading.Tasks;
 
 namespace SqlFluent
 {
+    public interface IExecuteMulti {
+        Dictionary<string, List<object>> ExecuteReader(Action<SqlCommand> postReadAction = null);
+    }
+
+    public interface IMultiReader {
+        IMultiReader Reader(string key, Func<SqlDataReader, object> readerAction);
+        IExecuteMulti ReadersEnd();
+    }
+
+    public interface IMulti {
+        IMultiReader ReadersStart();
+    }
+
+    public interface ICascade
+    {
+        IPrimaryReader ReadersStart();
+    }
+
     public interface ILevelReader {
         ILevelReader Reader<T>(Action<SqlDataReader, T> readerAction);
         IExecuteCascade ReadersEnd();
     }
     public interface IPrimaryReader {
+       
         ILevelReader Reader<T>(Func<SqlDataReader, T> readerAction);
+    }
+
+
+    public interface IExecuteCascade
+    {
+        IExecuteCascade Selector<T>(Func<SqlDataReader, Predicate<T>> selector);
+        T ExecuteSingle<T>(Action<SqlCommand> postReadAction = null);
+        IEnumerable<T> ExecuteReader<T>(Action<SqlCommand> postReadAction = null);
     }
 
     public interface IParameter {
@@ -25,7 +52,9 @@ namespace SqlFluent
     public interface ICommand
     {
         IParameter ParametersStart();
-        IPrimaryReader ReadersStart();
+        ICascade Cascade();
+        IMulti Multi();
+
         ICommand Query(string query);
         ICommand StoredProcedure(string query);
 
@@ -45,15 +74,8 @@ namespace SqlFluent
         ICommand ConnectionString(string connectionString);
     }
 
-    public interface IExecuteCascade
-    {
-        IExecuteCascade Selector<T>(Func<SqlDataReader, Predicate<T>> selector);
-        T ExecuteSingleWithCascade<T>(Action<SqlCommand> postReadAction = null);
-        IEnumerable<T> ExecuteReaderWithCascade<T>( Action<SqlCommand> postReadAction = null);
-    }
-
     public partial class SqlFluent : IConnectionString, ICommand, IParameter,
-        IPrimaryReader, ILevelReader, IExecuteCascade
+    IPrimaryReader, ILevelReader, ICascade, IExecuteCascade, IMulti, IMultiReader, IExecuteMulti
     {
         string _connectionString;
         List<SqlParameter> _commandParameters;
@@ -62,6 +84,7 @@ namespace SqlFluent
         object _primaryAction;
         List<object> _levelReaderActions = new List<object>();
         object _selector;
+        Dictionary<string, Func<SqlDataReader, object>> _multiReaders = new Dictionary<string, Func<SqlDataReader, object>>();
 
         public SqlFluent()
         {
@@ -210,7 +233,9 @@ namespace SqlFluent
         }
 
         #region Cascade
-        public IPrimaryReader ReadersStart() => this;
+        IPrimaryReader ICascade.ReadersStart() => this;
+
+        ICascade ICommand.Cascade() => this;
 
         public ILevelReader Reader<T>(Func<SqlDataReader, T> readerAction)
         {
@@ -224,7 +249,7 @@ namespace SqlFluent
             return this;
         }
 
-        public T ExecuteSingleWithCascade<T>(Action<SqlCommand> postReadAction = null)
+        public T ExecuteSingle<T>(Action<SqlCommand> postReadAction = null)
         {
             var result = default(T);
             Execute(cmd =>
@@ -254,7 +279,7 @@ namespace SqlFluent
             return this;
         }
 
-        public IEnumerable<T> ExecuteReaderWithCascade<T>(Action<SqlCommand> postReadAction = null)
+        public IEnumerable<T> ExecuteReader<T>(Action<SqlCommand> postReadAction = null)
         {
             var result = new List<T>();
             Execute(cmd =>
@@ -285,6 +310,34 @@ namespace SqlFluent
         }
 
         public IExecuteCascade ReadersEnd() => this;
+        #endregion
+
+
+        #region Multi
+        public IMulti Multi() => this;
+        IMultiReader IMulti.ReadersStart() => this;
+        public IMultiReader Reader(string key, Func<SqlDataReader, object> readerAction) {
+            _multiReaders.Add(key, readerAction); 
+            return this;
+        }
+        IExecuteMulti IMultiReader.ReadersEnd() => this;
+
+        public Dictionary<string, List<object>> ExecuteReader(Action<SqlCommand> postReadAction = null) {
+            var result = new Dictionary<string, List<object>>();
+            Execute(cmd => {
+                using (var reader = cmd.ExecuteReader(CommandBehavior.CloseConnection)) {
+                    _multiReaders.ForEach(x => {
+                        var objects = new List<object>();
+                        while (reader.Read()) {
+                            objects.Add(x.Value(reader)); 
+                        }
+                        reader.NextResult();
+                        result.Add(x.Key, objects); 
+                    });
+                }
+            });
+            return result;
+        }
         #endregion
     }
 }

@@ -142,6 +142,7 @@ namespace SqlFluent.App
             .ParametersStart()
             .Parameter("@customerId", SqlDbType.Int, value: 29545)
             .ParametersEnd()
+            .Cascade()
             .ReadersStart()
             .Reader(reader => new Customer { 
                 CustomerId = reader.GetSafeValue<int>("CustomerId"),
@@ -167,8 +168,7 @@ namespace SqlFluent.App
                     StateProvince = reader.GetSafeValue<string>("StateProvince"),
                     PostalCode = reader.GetSafeValue<string>("PostalCode")
                 }); 
-            })
-            .Reader<Customer>((reader, cust) => {
+            }).Reader<Customer>((reader, cust) => {
                 cust.Orders.Add(new SalesOrder {
                     SalesOrderId = reader.GetSafeValue<int>("SalesOrderId"),
                     OrderDate = reader.GetSafeValue<DateTime>("OrderDate"),
@@ -177,9 +177,8 @@ namespace SqlFluent.App
                     RevisionNumber = reader.GetSafeValue<byte>("RevisionNumber"),
                     SalesOrderNumber = reader.GetSafeValue<string>("SalesOrderNumber") 
                 }); 
-            })
-            .ReadersEnd()
-            .ExecuteSingleWithCascade<Customer>();
+            }).ReadersEnd()
+            .ExecuteSingle<Customer>();
 
             Console.WriteLine("ExecuteReader Cascade (StoredProcedure)");
             Console.WriteLine("--------------------");
@@ -188,6 +187,7 @@ namespace SqlFluent.App
                 .ParametersStart()
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
                 .ParametersEnd()
+                .Cascade()
                 .ReadersStart()
                 .Reader(reader => new Customer {
                     CustomerId = reader.GetSafeValue<int>("CustomerId"),
@@ -225,8 +225,43 @@ namespace SqlFluent.App
                     });
                 }).ReadersEnd()
                 .Selector<Customer>(reader => cust => cust.CustomerId == reader.GetSafeValue<int>("CustomerId"))
-                .ExecuteReaderWithCascade<Customer>();
+                .ExecuteReader<Customer>();
 
+            Console.WriteLine("ExecuteReader Multi (Query)");
+            Console.WriteLine("--------------------");
+            var resultSet = new SQF(connectionstring)
+                .Query("select * from SalesLT.Product where Color=@color; select * from SalesLT.Customer where lastname=@lastname")
+                .ParametersStart()
+                .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
+                .Parameter("@color", SqlDbType.NVarChar, value: "yellow", size: 50)
+                .ParametersEnd()
+                .Multi()
+                .ReadersStart()
+                .Reader("Colors", reader => new Product {
+                    ProductId = reader.GetSafeValue<int>("ProductId"),
+                    ProductName = reader.GetSafeValue<string>("Name"),
+                    ProductNumber = reader.GetSafeValue<string>("ProductNumber"),
+                    Color = reader.GetSafeValue<string>("Color"),
+                    StandardCost = reader.GetSafeValue<decimal>("StandardCost"),
+                    ListPrice = reader.GetSafeValue<decimal>("ListPrice"),
+                    Size = reader.GetSafeValue<string>("Size"),
+                    Weight = reader.GetSafeValue<decimal?>("Weight"),
+                    SellStartDate = reader.GetSafeValue<DateTime>("SellStartDate"),
+                    SellEndDate = reader.GetSafeValue<DateTime?>("SellEndDate")
+                }).Reader("Customers", reader => new Customer {
+                    CustomerId = reader.GetSafeValue<int>("CustomerId"),
+                    Title = reader.GetSafeValue<string>("Title"),
+                    FirstName = reader.GetSafeValue<string>("FirstName"),
+                    MiddleName = reader.GetSafeValue<string>("MiddleName"),
+                    LastName = reader.GetSafeValue<string>("LastName"),
+                    Suffix = reader.GetSafeValue<string>("Suffix"),
+                    CompanyName = reader.GetSafeValue<string>("CompanyName"),
+                    EmailAddress = reader.GetSafeValue<string>("EmailAddress")
+                }).ReadersEnd()
+                .ExecuteReader();
+
+            var products = resultSet.Get<Product>("Colors");
+            var custs = resultSet.Get<Customer>("Customers"); 
         }
     }
 }

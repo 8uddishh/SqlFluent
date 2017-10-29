@@ -148,6 +148,7 @@ var customer = new SqlFluent(connectionstring)
             .ParametersStart()
             .Parameter("@customerId", SqlDbType.Int, value: 29545)
             .ParametersEnd()
+            .Cascade()
             .ReadersStart()
             .Reader(reader => new Customer { 
                 CustomerId = reader.GetSafeValue<int>("CustomerId"),
@@ -185,7 +186,7 @@ var customer = new SqlFluent(connectionstring)
                 }); 
             })
             .ReadersEnd()
-            .ExecuteSingleWithCascade<Customer>();
+            .ExecuteSingle<Customer>();
 ```
 
 ## Execute Reader - Cascade Mode
@@ -195,6 +196,7 @@ var customer = new SqlFluent(connectionstring)
                 .ParametersStart()
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
                 .ParametersEnd()
+                .Cascade()
                 .ReadersStart()
                 .Reader(reader => new Customer {
                     CustomerId = reader.GetSafeValue<int>("CustomerId"),
@@ -232,7 +234,44 @@ var customer = new SqlFluent(connectionstring)
                     });
                 }).ReadersEnd()
                 .Selector<Customer>(reader => cust => cust.CustomerId == reader.GetSafeValue<int>("CustomerId"))
-                .ExecuteReaderWithCascade<Customer>();
+                .ExecuteReader<Customer>();
+```
+
+## Execute Reader Multi Mode
+``` c#
+        var resultSet = new SQF(connectionstring)
+                .Query("select * from SalesLT.Product where Color=@color; select * from SalesLT.Customer where lastname=@lastname")
+                .ParametersStart()
+                .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
+                .Parameter("@color", SqlDbType.NVarChar, value: "yellow", size: 50)
+                .ParametersEnd()
+                .Multi()
+                .ReadersStart()
+                .Reader("Colors", reader => new Product {
+                    ProductId = reader.GetSafeValue<int>("ProductId"),
+                    ProductName = reader.GetSafeValue<string>("Name"),
+                    ProductNumber = reader.GetSafeValue<string>("ProductNumber"),
+                    Color = reader.GetSafeValue<string>("Color"),
+                    StandardCost = reader.GetSafeValue<decimal>("StandardCost"),
+                    ListPrice = reader.GetSafeValue<decimal>("ListPrice"),
+                    Size = reader.GetSafeValue<string>("Size"),
+                    Weight = reader.GetSafeValue<decimal?>("Weight"),
+                    SellStartDate = reader.GetSafeValue<DateTime>("SellStartDate"),
+                    SellEndDate = reader.GetSafeValue<DateTime?>("SellEndDate")
+                }).Reader("Customers", reader => new Customer {
+                    CustomerId = reader.GetSafeValue<int>("CustomerId"),
+                    Title = reader.GetSafeValue<string>("Title"),
+                    FirstName = reader.GetSafeValue<string>("FirstName"),
+                    MiddleName = reader.GetSafeValue<string>("MiddleName"),
+                    LastName = reader.GetSafeValue<string>("LastName"),
+                    Suffix = reader.GetSafeValue<string>("Suffix"),
+                    CompanyName = reader.GetSafeValue<string>("CompanyName"),
+                    EmailAddress = reader.GetSafeValue<string>("EmailAddress")
+                }).ReadersEnd()
+                .ExecuteReader();
+
+            var products = resultSet.Get<Product>("Colors");
+            var custs = resultSet.Get<Customer>("Customers"); 
 ```
 # Async
 Async implementations are available in the SqlFluent.Web2 application in the HomeController
@@ -240,7 +279,7 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
 
 ## Async Implementations ExecuteReaderAsync
 ``` c#
-    var products = await new SqlFluent(builder.ConnectionString)
+    var products = await new SqlFluent(connectionString)
                 .Query("select top 25 * from SalesLT.Product where productid > @productId and Color = @color")
                 .ParametersStart()
                 .Parameter("@productId", SqlDbType.Int, value: 800)
@@ -265,7 +304,7 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
 
 ## Async Implementations ExecuteSingleAsync
 ``` c#
-    var customer = await new SqlFluent(builder.ConnectionString)
+    var customer = await new SqlFluent(connectionString)
                 .Query("Select * from SalesLT.Customer where LastName = @lastname and customerid < @customerId")
                 .ParametersStart()
                 .Parameter("@customerId", SqlDbType.Int, value: 10)
@@ -289,11 +328,7 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
 ``` c#
     var newGuid = Guid.NewGuid();
             var newCategoryId = 0;
-
-            var builder =
-                new SqlConnectionStringBuilder(ConfigurationManager.AppSettings["connectionstring"]);
-            builder.AsynchronousProcessing = true;
-            await new SqlFluent(builder.ConnectionString)
+            await new SqlFluent(connectionString)
                 .StoredProcedure("SalesLT.AddCategory")
                 .ParametersStart()
                 .Parameter("@name", SqlDbType.NVarChar, value: $"Test-{newGuid}", size: 200)
@@ -311,14 +346,15 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
                 });
 ```
 
-## Async Implementations ExecuteSingleWithCascadeAsync
+## Async Implementations ExecuteSingleAsync Cascade Mode
 ``` c#
-    var customer2 = await new SqlFluent(builder.ConnectionString)
+    var customer2 = await new SqlFluent(connectionString)
             .StoredProcedure("SalesLT.GetCustomerCompleteInfo")
             .ParametersStart()
             .Parameter("@customerId", SqlDbType.Int, value: 29545)
             .ParametersEnd()
             .Async() 
+            .Cascade()
             .ReadersStartAsync()
             .ReaderAsync(async reader => new Customer
             {
@@ -357,14 +393,15 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
             .ExecuteSingleWithCascadeAsync<Customer>();
 ```
 
-## Async Implementations ExecuteReaderWithCascadeAsync
+## Async Implementations ExecuteReaderAsync Cascade Mode
 ``` c#
-    var customers = await new SqlFluent(builder.ConnectionString)
+    var customers = await new SqlFluent(connectionString)
                 .StoredProcedure("SalesLT.GetCustomerCompleteInfoForName")
                 .ParametersStart()
                 .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
                 .ParametersEnd()
                 .Async()
+                .Cascade()
                 .ReadersStartAsync()
                 .ReaderAsync(async reader => new Customer {
                     CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
@@ -402,8 +439,47 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
                     });
                 }).ReadersEndAsync()
                 .SelectorAsync<Customer>(reader => cust => cust.CustomerId == reader.GetSafeValue<int>("CustomerId"))
-                .ExecuteReaderWithCascadeAsync<Customer>();
+                .ExecuteReaderAsync<Customer>();
 ```
+
+## Async Implementations ExecuteReaderAsync Multi Mode
+``` c#
+        var resultSet = await new SqlFluent(connectionString)
+                .Query("select * from SalesLT.Product where Color=@color; select * from SalesLT.Customer where lastname=@lastname")
+                .ParametersStart()
+                .Parameter("@lastname", SqlDbType.NVarChar, value: "Harrington", size: 50)
+                .Parameter("@color", SqlDbType.NVarChar, value: "yellow", size: 50)
+                .ParametersEnd()
+                .Async()
+                .Multi()
+                .ReadersStartAsync()
+                .ReaderAsync("Colors", async reader => new Product {
+                    ProductId = await reader.GetSafeValueAsync<int>("ProductId"),
+                    ProductName = await reader.GetSafeValueAsync<string>("Name"),
+                    ProductNumber = await reader.GetSafeValueAsync<string>("ProductNumber"),
+                    Color = await reader.GetSafeValueAsync<string>("Color"),
+                    StandardCost = await reader.GetSafeValueAsync<decimal>("StandardCost"),
+                    ListPrice = await reader.GetSafeValueAsync<decimal>("ListPrice"),
+                    Size = await reader.GetSafeValueAsync<string>("Size"),
+                    Weight = await reader.GetSafeValueAsync<decimal?>("Weight"),
+                    SellStartDate = await reader.GetSafeValueAsync<DateTime>("SellStartDate"),
+                    SellEndDate = await reader.GetSafeValueAsync<DateTime?>("SellEndDate")
+                }).ReaderAsync("Customers", async reader => new Customer {
+                    CustomerId = await reader.GetSafeValueAsync<int>("CustomerId"),
+                    Title = await reader.GetSafeValueAsync<string>("Title"),
+                    FirstName = await reader.GetSafeValueAsync<string>("FirstName"),
+                    MiddleName = await reader.GetSafeValueAsync<string>("MiddleName"),
+                    LastName = await reader.GetSafeValueAsync<string>("LastName"),
+                    Suffix = await reader.GetSafeValueAsync<string>("Suffix"),
+                    CompanyName = await reader.GetSafeValueAsync<string>("CompanyName"),
+                    EmailAddress = await reader.GetSafeValueAsync<string>("EmailAddress")
+                }).ReadersEndAsync()
+                .ExecuteReaderAsync();
+
+            var products = resultSet.Get<Product>("Colors");
+            var customers = resultSet.Get<Customer>("Customers");
+```
+
 ## What the future holds
 * Multiple result sets handling will be added
 * Multi level where level > 2 will be added
