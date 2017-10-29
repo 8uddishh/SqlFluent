@@ -44,8 +44,8 @@ var products = new SqlFluent(connectionstring)
                 });
 ```
 
-## Execute Reader using stored procedure, Note that the connection string can be passed as constructor parameter or by
-calling ConnectionString method.
+## Execute Reader using stored procedure
+Note that the connection string can be passed as constructor parameter or by calling ConnectionString method.
 
 ``` c#
 var connectionstring = ConfigurationManager.AppSettings["connectionstring"];
@@ -480,6 +480,6 @@ Async implementations are available in the SqlFluent.Web2 application in the Hom
             var customers = resultSet.Get<Customer>("Customers");
 ```
 
-## What the future holds
-* Multiple result sets handling will be added
-* Multi level where level > 2 will be added
+## Tomare
+
+This package does not necessarily will cater all you requirements. But I do believe this is more than the bare minumum should cover a majority of your scenarios. Albeit that being said, in instance when requirement is not workable in this library we recommend that one uses the regular way of solving. Eg Multi level reader where level > 2.
