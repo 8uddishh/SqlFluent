@@ -32,9 +32,6 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Configuration" />
-    <Reference Include="SqlFluent">
-      <HintPath>..\SqlFluent\bin\Debug\SqlFluent.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -49,6 +46,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SqlFluent\SqlFluent.csproj">
+      <Project>{125B0258-58F4-4FB1-8C8A-E9E4F6F50C10}</Project>
+      <Name>SqlFluent</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
