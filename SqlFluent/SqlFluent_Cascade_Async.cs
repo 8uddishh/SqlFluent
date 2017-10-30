@@ -108,8 +108,7 @@ namespace SqlFluent
                         }
                     });
                 }
-                postReadAction?.Invoke(cmd);
-            });
+            }, postReadAction);
 
             return result;
         }

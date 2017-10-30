@@ -72,8 +72,7 @@ namespace SqlFluent
                         });
                     }
                 }
-                postReadAction?.Invoke(cmd);
-            });
+            },postReadAction);
             return result;
         }
 
@@ -107,8 +106,7 @@ namespace SqlFluent
                         }
                     });
                 }
-                postReadAction?.Invoke(cmd);
-            });
+            }, postReadAction);
 
             return result;
         }

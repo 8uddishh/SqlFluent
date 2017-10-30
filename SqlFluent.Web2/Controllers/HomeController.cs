@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Mvc;
-using System.Web.Mvc.Ajax;
 using SqlFluent.Web2.Models;
 
 namespace SqlFluent.Web2.Controllers

@@ -96,7 +96,7 @@ namespace SqlFluent
 
         public ICommand ParametersEnd() => this;
 
-        void Execute(Action<SqlCommand> action)
+        void Execute(Action<SqlCommand> action, Action<SqlCommand> postAction = null)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -107,6 +107,7 @@ namespace SqlFluent
                         command.Parameters.AddRange(_commandParameters.ToArray());
 
                     action(command);
+                    postAction?.Invoke(command);
                     connection.Close();
                 }
             }
@@ -131,8 +132,7 @@ namespace SqlFluent
                     while (reader.Read())
                         result.Add(readerAction(reader));
                 }
-                postReadAction?.Invoke(cmd);
-            });
+            }, postReadAction);
 
             return result;
         }
@@ -170,8 +170,7 @@ namespace SqlFluent
                         break;
                     }
                 }
-                postReadAction?.Invoke(cmd);
-            });
+            }, postReadAction);
 
             return result;
         }
@@ -182,8 +181,7 @@ namespace SqlFluent
             Execute(cmd =>
             {
                 result = cmd.ExecuteScalar();
-                postReadAction?.Invoke(cmd);
-            });
+            }, postReadAction);
             return result;
         }
     }

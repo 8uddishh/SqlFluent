@@ -51,7 +51,7 @@ namespace SqlFluent
                         result.Add(x.Key, objects);
                     });
                 }
-            });
+            }, postReadAction);
             return result;
         }
     }
